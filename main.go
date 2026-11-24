@@ -44,6 +44,10 @@ func main() {
 			return
 		}
 
-		fmt.Print(line)
+		event, ok := parseLine(line)
+
+		if ok {
+			fmt.Printf("[%s] %s\n", event.Type, event.Player)
+		}
 	}
 }
