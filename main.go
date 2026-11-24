@@ -17,7 +17,8 @@ func main() {
 		return
 	}
 
-	file, err := os.Open("testdata/latest.log")
+	logPath := "testdata/latest.log"
+	file, err := os.Open(logPath)
 
 	if err != nil {
 		fmt.Println("Error opening log:", err)
@@ -25,7 +26,9 @@ func main() {
 		return
 	}
 
-	defer file.Close()
+	defer func() {
+		file.Close()
+	}()
 
 	if _, err := file.Seek(0, io.SeekEnd); err != nil {
 		fmt.Println("Error seeking file:", err)
@@ -41,6 +44,18 @@ func main() {
 		line, err := reader.ReadString('\n')
 
 		if err == io.EOF {
+			rotated, err := fileRotated(file, logPath)
+
+			if err == nil && rotated {
+				newFile, err := os.Open(logPath)
+
+				if err == nil {
+					file.Close()
+					file = newFile
+					reader.Reset(file)
+				}
+			}
+
 			time.Sleep(500 * time.Millisecond)
 
 			continue
