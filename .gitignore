@@ -7,10 +7,10 @@
 /minecraft-watcher
 /bin/
 /dist/
+/testdata/
 
 # Runtime logs
 *.log
-!testdata/latest.log
 
 # Temporary files
 *.tmp
