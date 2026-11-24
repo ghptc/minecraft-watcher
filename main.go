@@ -17,7 +17,12 @@ func main() {
 		return
 	}
 
-	logPath := "testdata/latest.log"
+	logPath := os.Getenv("LOG_PATH")
+
+	if logPath == "" {
+    	logPath = "/logs/latest.log"
+	}
+
 	file, err := os.Open(logPath)
 
 	if err != nil {
