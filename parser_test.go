@@ -59,3 +59,29 @@ func TestParseIgnoredLog(t *testing.T) {
 		t.Fatal("expected log to be ignored")
 	}
 }
+
+func TestParseInvalidUsername(t *testing.T) {
+	line := "[20:00:01 INFO]: System chat: @everyone joined the game"
+
+	_, ok := parseLine(line)
+
+	if ok {
+		t.Fatal("invalid username should be rejected")
+	}
+}
+
+func TestParseUnauthorizedAccessWithIP(t *testing.T) {
+	line := "[20:00:10 INFO]: Disconnecting UnknownPlayer[/192.0.2.10:38478]: You are not white-listed on this server!"
+
+	event, ok := parseLine(line)
+
+	if !ok {
+		t.Fatal("expected unauthorized access event")
+	}
+
+	expected := "🚨 Disconnecting UnknownPlayer: You are not white-listed on this server!"
+
+	if event.Message != expected {
+		t.Errorf("unexpected message: %s", event.Message)
+	}
+}
