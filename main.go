@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const maxLineSize = 64 * 1024
+
 func main() {
 	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
 
@@ -20,7 +22,7 @@ func main() {
 	logPath := os.Getenv("LOG_PATH")
 
 	if logPath == "" {
-    	logPath = "/logs/latest.log"
+		logPath = "/logs/latest.log"
 	}
 
 	file, err := os.Open(logPath)
@@ -46,9 +48,32 @@ func main() {
 	fmt.Println("Watching Minecraft logs...")
 
 	var pending string
+	var discarding bool
 
 	for {
-		line, err := reader.ReadString('\n')
+		fragment, err := reader.ReadSlice('\n')
+		line := string(fragment)
+
+		if len(pending)+len(line) > maxLineSize {
+			pending = ""
+			discarding = true
+		}
+
+		if err == bufio.ErrBufferFull {
+			if !discarding {
+				pending += line
+			}
+			continue
+		}
+
+		if discarding {
+			line = ""
+
+			if err == nil {
+				discarding = false
+				continue
+			}
+		}
 
 		if err == io.EOF {
 			pending += line
@@ -63,6 +88,7 @@ func main() {
 					file = newFile
 					reader.Reset(file)
 					pending = ""
+					discarding = false
 				}
 			} else {
 				truncated, truncateErr := fileTruncated(file)
@@ -75,6 +101,7 @@ func main() {
 
 					reader.Reset(file)
 					pending = ""
+					discarding = false
 				}
 			}
 
