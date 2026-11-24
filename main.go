@@ -40,32 +40,50 @@ func main() {
 
 	fmt.Println("Watching Minecraft logs...")
 
+	var pending string
+
 	for {
 		line, err := reader.ReadString('\n')
 
 		if err == io.EOF {
-			rotated, err := fileRotated(file, logPath)
+			pending += line
 
-			if err == nil && rotated {
-				newFile, err := os.Open(logPath)
+			rotated, rotationErr := fileRotated(file, logPath)
 
-				if err == nil {
+			if rotationErr == nil && rotated {
+				newFile, openErr := os.Open(logPath)
+
+				if openErr == nil {
 					file.Close()
 					file = newFile
 					reader.Reset(file)
+					pending = ""
+				}
+			} else {
+				truncated, truncateErr := fileTruncated(file)
+
+				if truncateErr == nil && truncated {
+					if _, err := file.Seek(0, io.SeekStart); err != nil {
+						fmt.Println("Seek error:", err)
+						return
+					}
+
+					reader.Reset(file)
+					pending = ""
 				}
 			}
 
 			time.Sleep(500 * time.Millisecond)
-
 			continue
 		}
 
 		if err != nil {
 			fmt.Println("Error reading log:", err)
-
 			return
 		}
+
+		line = pending + line
+		pending = ""
 
 		event, ok := parseLine(line)
 
@@ -79,5 +97,4 @@ func main() {
 			fmt.Println("Notification error:", err)
 		}
 	}
-
 }
